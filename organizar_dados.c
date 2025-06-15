@@ -27,26 +27,30 @@ int main(int argc, char *argv[]) {
     if (argc != 2) erro("Uso: ./organizar_dados <arquivo_entrada>");
 
     FILE *entrada = fopen(argv[1], "r");
-    if (!entrada) erro("Não foi possível abrir o arquivo de entrada.");
+    if (!entrada) erro("Não foi possível abrir o arquivo de entrada..");
 
     Leitura leituras[MAX_LEITURAS];
     int total = 0;
+    int linha_atual = 1; // contador de linha para identificar erros
 
-    // Leitura de todas as linhas do arquivo
-    while (fscanf(entrada, "%ld %15s %31s", &leituras[total].timestamp, leituras[total].id_sensor, leituras[total].valor) == 3) {
-        total++;
-        if (total >= MAX_LEITURAS) erro("Número de leituras excede o limite.");
+    char buffer[MAX_LINHA];
+    while (fgets(buffer, sizeof(buffer), entrada)) {
+        char id_sensor[16], valor[32];
+        long timestamp;
+
+        int campos = sscanf(buffer, "%ld %15s %31s", &timestamp, id_sensor, valor);
+        if (campos != 3) {
+            fprintf(stderr, "Linha %d ignorada: formato inválido -> %s", linha_atual, buffer);
+        } else {
+            leituras[total].timestamp = timestamp;
+            strncpy(leituras[total].id_sensor, id_sensor, sizeof(leituras[total].id_sensor));
+            strncpy(leituras[total].valor, valor, sizeof(leituras[total].valor));
+            total++;
+            if (total >= MAX_LEITURAS) erro("Número de leituras excede o limite.");
+        }
+        linha_atual++;
     }
     fclose(entrada);
-
-    // Laço superficial para separar sensores (não implementado completamente)
-    for (int i = 0; i < total; i++) {
-        for (int j = i + 1; j < total; j++) {
-            if (strcmp(leituras[i].id_sensor, leituras[j].id_sensor) == 0) {
-                continue;
-            }
-        }
-    }
 
     // Salva as leituras separadamente em arquivos por sensor
     for (int i = 0; i < total; i++) {
